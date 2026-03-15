@@ -17,12 +17,27 @@ Common ARIA attributes to target in CSS:
 
 ---
 
+**CRITICAL**: Before using this package, it must be installed via the package manager. Confirm that it has been installed in the project. Use `npm install @angular/aria` to install if necessary.
+
 ## 1. Accordion
 
 Organizes related content into expandable/collapsible sections.
 
 **Usage:** FAQs, organizing long forms.
+**Imports:** `import { AccordionContent, AccordionGroup, AccordionPanel, AccordionTrigger } from '@angular/aria/accordion';`
 **Directives:** `ngAccordionGroup`, `ngAccordionTrigger`, `ngAccordionPanel`, `ngAccordionContent` (for lazy loading).
+
+```ts
+@Component({
+  selector: 'app-cmp',
+  imports: [AccordionContent, AccordionGroup, AccordionPanel, AccordionTrigger],
+  template: `...`,
+  styles: [],
+})
+export class App {
+  protected readonly title = signal('angular-app');
+}
+```
 
 ```html
 <div ngAccordionGroup [multiExpandable]="false">
@@ -62,7 +77,21 @@ Target the `[aria-expanded]` attribute on the trigger to rotate icons, and style
 A foundational directive for displaying a list of options. Used for visible selection lists (not dropdowns).
 
 **Usage:** Visible selectable lists (single or multi-select).
+**Imports:** `import {Listbox, Option} from '@angular/aria/listbox';`
 **Directives:** `ngListbox`, `ngOption`.
+
+
+```ts
+@Component({
+  selector: 'app-cmp',
+  imports: [Listbox, Option],
+  template: `...`,
+  styles: [],
+})
+export class App {
+  protected readonly title = signal('angular-app');
+}
+```
 
 ```html
 <!-- horizontal or vertical orientation -->
@@ -267,6 +296,8 @@ Target `[aria-pressed="true"]` (for toggle buttons) or `[aria-checked="true"]` (
 
 ---
 
+---
+
 ## 7. Tree
 
 Displays hierarchical data (file systems, nested nav).
@@ -287,7 +318,7 @@ Displays hierarchical data (file systems, nested nav).
 **Styling Strategy:**
 Target `[aria-expanded]` to show/hide children or rotate chevron icons. Use `padding-left` on nested groups to show hierarchy.
 
-```css
+````css
 .tree,
 .tree-group {
   list-style: none;
@@ -300,6 +331,49 @@ Target `[aria-expanded]` to show/hide children or rotate chevron icons. Use `pad
 }
 li[aria-expanded='true'] > .tree-label::before {
   transform: rotate(90deg);
+}
+---
+
+## 8. Grid
+
+A two-dimensional interactive collection of cells enabling navigation via arrow keys.
+
+**Usage:** Data tables, calendars, spreadsheets, and layout patterns for interactive elements.
+**Directives:** `ngGrid`, `ngGridRow`, `ngGridCell`, `ngGridCellWidget`.
+
+```html
+<table ngGrid [multi]="true" [enableSelection]="true" class="grid-table">
+  <tr ngGridRow>
+    <th ngGridCell role="columnheader">Name</th>
+    <th ngGridCell role="columnheader">Status</th>
+  </tr>
+  <tr ngGridRow>
+    <td ngGridCell>Project A</td>
+    <td ngGridCell [(selected)]="isSelected">
+      <button ngGridCellWidget (activated)="onActivate()">Active</button>
+    </td>
+  </tr>
+</table>
+````
+
+**Styling Strategy:**
+Target `[aria-selected="true"]` for selected cells and `:focus-visible` for the active cell (roving tabindex) or `[aria-activedescendant]` on the container.
+
+```css
+.grid-table {
+  border-collapse: collapse;
+}
+[ngGridCell] {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+[ngGridCell][aria-selected='true'] {
+  background: #e3f2fd;
+}
+/* Focus state managed by roving tabindex */
+[ngGridCell]:focus-visible {
+  outline: 2px solid #2196f3;
+  outline-offset: -2px;
 }
 ```
 
