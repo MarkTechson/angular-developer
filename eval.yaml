@@ -530,3 +530,172 @@ tasks:
           4. Includes CSS targeting `[aria-selected="true"]` or `[aria-selected='true']` to highlight the selected cell/row.
           5. Did not build a static HTML `<table>` without the headless grid directives.
         weight: 0.3
+
+  - name: angular-signal-forms-basic
+    instruction: |
+      Create a user registration component (username, age) using the new Angular Signal Forms (v21+).
+      Require validation: username is required, and age must be at least 18.
+      Make sure to initialize the model without using null or undefined.
+      Save as `user-registration.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=5
+          
+          # Check 1: Imports
+          if grep -q "from '@angular/forms/signals'" user-registration.component.ts && grep -q "\bform\b" user-registration.component.ts && grep -q "\bFormField\b" user-registration.component.ts; then
+            c1=1; m1="Signal Forms imports found"
+          else
+            c1=0; m1="Missing @angular/forms/signals imports"
+          fi
+          
+          # Check 2: No Reactive Forms imports
+          if ! grep -q "\bFormBuilder\b\|\bFormControl\b\|\bFormGroup\b" user-registration.component.ts; then
+            c2=1; m2="No deprecated reactive forms imports"
+          else
+            c2=0; m2="Found deprecated reactive forms imports"
+          fi
+          
+          # Check 3: Model Initialization
+          if ! grep -E -q "username:\s*null|age:\s*null" user-registration.component.ts; then
+            c3=1; m3="Model initialized without null"
+          else
+            c3=0; m3="Model initialized with null"
+          fi
+          
+          # Check 4: formField binding
+          if grep -q "\[formField\]" user-registration.component.ts; then
+            c4=1; m4="[formField] binding found"
+          else
+            c4=0; m4="Missing [formField] binding"
+          fi
+          
+          # Check 5: Forbidden attributes
+          if ! grep -E -q "min=\"18\"|\[value\]=" user-registration.component.ts; then
+            c5=1; m5="No forbidden attributes"
+          else
+            c5=0; m5="Found forbidden attributes (min, max, value)"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4 + c5))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"no_reactive\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"model_init\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"binding\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"},{\"name\":\"no_forbidden_attrs\",\"passed\":$( [ $c5 -eq 1 ] && echo true || echo false ),\"message\":\"$m5\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement a basic Signal Form.
+          1. Uses `form()` and `FormField` from `@angular/forms/signals`.
+          2. Avoids `null` or `undefined` initialization for model values.
+          3. Applies validation rules (required, min) in the schema, NOT in the HTML template.
+          4. Does not use deprecated ReactiveFormsModule classes (FormBuilder, FormControl).
+        weight: 0.3
+
+  - name: angular-signal-forms-state
+    instruction: |
+      Create a login component using Signal Forms. 
+      Disable the submit button when the form is invalid.
+      Show an error message only when the email field is both touched and invalid.
+      Handle form submission via an API mock (using the submit function).
+      Save as `login.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Field State Access
+          if grep -q "email().touched()" login.component.ts || grep -E -q "\.email\(\)\.touched\(\)" login.component.ts; then
+            c1=1; m1="Correct field state access"
+          else
+            c1=0; m1="Incorrect field state access (missing parens)"
+          fi
+          
+          # Check 2: Form Root Flags
+          if grep -E -q "\[disabled\]=\".*\(\)\.invalid\(\)\"" login.component.ts; then
+            c2=1; m2="Correct form root flag access"
+          else
+            c2=0; m2="Incorrect form root flag access"
+          fi
+          
+          # Check 3: Submit Function
+          if grep -q "submit(" login.component.ts; then
+            c3=1; m3="submit function found"
+          else
+            c3=0; m3="Missing submit function"
+          fi
+          
+          # Check 4: Async Submit Callback
+          if grep -E -q "submit\(.*,\s*async\s*\(\)\s*=>" login.component.ts || grep -E -q "submit\(.*,\s*async\s*[a-zA-Z0-9_]*\s*=>" login.component.ts; then
+            c4=1; m4="Async submit callback found"
+          else
+            c4=0; m4="Submit callback is not async"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"field_state\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"form_state\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"submit_fn\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"async_submit\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should demonstrate proper access of FieldState and proper usage of the submit function.
+          1. Must correctly call the field to get state signals: `email().touched()` instead of `email.touched()`.
+          2. Must correctly call the form to get root state signals: `form().invalid()` instead of `form.invalid()`.
+          3. Must use the `submit()` function for handling the submission event.
+          4. The callback passed to `submit()` must be asynchronous.
+        weight: 0.3
+
+  - name: angular-signal-forms-async-validation
+    instruction: |
+      Create a component with a username field that validates availability asynchronously.
+      Simulate a 500ms network delay. Follow strict Signal Forms requirements for async validation.
+      Save as `async-username.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: validateAsync import
+          if grep -q "validateAsync" async-username.component.ts; then
+            c1=1; m1="validateAsync import found"
+          else
+            c1=0; m1="Missing validateAsync"
+          fi
+          
+          # Check 2: params function
+          if grep -E -q "params:\s*\(\{\s*value\s*\}\)\s*=>\s*value\(\)" async-username.component.ts; then
+            c2=1; m2="Correct params function found"
+          else
+            c2=0; m2="Incorrect params syntax for validateAsync"
+          fi
+          
+          # Check 3: resource parameters
+          if grep -E -q "resource\(\{" async-username.component.ts && grep -E -q "params:\s*[a-zA-Z0-9_]+" async-username.component.ts; then
+            c3=1; m3="Correct resource params usage"
+          else
+            c3=0; m3="Incorrect resource syntax (missing params)"
+          fi
+          
+          # Check 4: onError required
+          if grep -q "onError:" async-username.component.ts; then
+            c4=1; m4="onError callback found"
+          else
+            c4=0; m4="Missing required onError callback"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"validate_async\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"params_fn\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"resource_params\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"on_error\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should implement async validation correctly using `validateAsync`.
+          1. The `params` property in `validateAsync` must be a function: `({ value }) => value()`.
+          2. The `onError` callback must be implemented in `validateAsync`.
+          3. Uses `resource()` internally.
+          4. Passes the signal to `resource` using the `params` property, not the deprecated `request` property.
+        weight: 0.3
