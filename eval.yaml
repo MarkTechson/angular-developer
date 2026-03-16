@@ -1,0 +1,532 @@
+version: "1"
+
+defaults:
+  agent: gemini
+  provider: local
+  trials: 5
+  timeout: 300
+  threshold: 0.8
+  docker:
+    base: node:20-slim
+
+tasks:
+  - name: modern-angular-reactivity
+    instruction: |
+      Create a modern Angular component that demonstrates the latest reactivity features. 
+      1. Create a file named `user-profile.component.ts`.
+      2. Make the component have an input property named `userId`.
+      3. Fetch user data from `https://jsonplaceholder.typicode.com/users/` using the `userId` input.
+      4. Derive a `displayName` which is the user's name in uppercase.
+      5. Use the new `@if` and `@else` template control flow to handle loading and error states from the resource.
+      
+      Save the component code as user-profile.component.ts.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Signal Input
+          if grep -q "input(" user-profile.component.ts || grep -q "input.required<" user-profile.component.ts || grep -q "input<" user-profile.component.ts || grep -q "input.required(" user-profile.component.ts; then
+            c1=1; m1="Signal input found"
+          else
+            c1=0; m1="Signal input (input()) not found"
+          fi
+          
+          # Check 2: Resource API
+          if grep -q "resource(" user-profile.component.ts; then
+            c2=1; m2="Resource API found"
+          else
+            c2=0; m2="Resource API (resource()) not found"
+          fi
+          
+          # Check 3: Computed Signal
+          if grep -q "computed(" user-profile.component.ts; then
+            c3=1; m3="Computed signal found"
+          else
+            c3=0; m3="Computed signal not found"
+          fi
+          
+          # Check 4: Control Flow
+          if grep -q "@if" user-profile.component.ts; then
+            c4=1; m4="New control flow (@if) found"
+          else
+            c4=0; m4="New control flow (@if) not found"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"signal_input\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"resource_api\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"computed\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"control_flow\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement:
+          1. `input()` or `input.required()` for the userId.
+          2. `resource({ request: ..., loader: ... })` to fetch data asynchronously.
+          3. `computed(() => ...)` to transform the resource value.
+          4. The template should use `@if (userResource.isLoading())` or similar logic using the resource's status signals.
+          5. Proper imports from `@angular/core`.
+        weight: 0.3
+
+  - name: angular-aria-accordion
+    instruction: |
+      Hey, can you build me a standalone FAQ accordion component? I need it to be fully accessible.
+      
+      Also:
+      - Make sure the answers are lazy-loaded so we don't render all that content up front.
+      - Add some basic CSS so there's a chevron icon that rotates when you open a section.
+      - Just put some dummy questions and answers in there for now (at least two).
+      
+      Save it as `faq-accordion.component.ts`. Thanks!
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Imports
+          if grep -q "@angular/aria/accordion" faq-accordion.component.ts; then
+            c1=1; m1="Accordion imports found"
+          else
+            c1=0; m1="Accordion imports not found"
+          fi
+          
+          # Check 2: Directives
+          if grep -q "ngAccordionGroup" faq-accordion.component.ts && grep -q "ngAccordionTrigger" faq-accordion.component.ts && grep -q "ngAccordionPanel" faq-accordion.component.ts; then
+            c2=1; m2="Accordion directives found"
+          else
+            c2=0; m2="Accordion directives missing"
+          fi
+          
+          # Check 3: Lazy loading content
+          if grep -q "ngAccordionContent" faq-accordion.component.ts; then
+            c3=1; m3="ngAccordionContent found"
+          else
+            c3=0; m3="ngAccordionContent not found"
+          fi
+          
+          # Check 4: Styling
+          if grep -E -q "aria-expanded.*true" faq-accordion.component.ts; then
+            c4=1; m4="aria-expanded styling found"
+          else
+            c4=0; m4="aria-expanded styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"lazy_content\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"styling\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible accordion by utilizing the `@angular/aria/accordion` package, mapping the human request to the correct architectural guidelines.
+          1. Imports `AccordionGroup`, `AccordionTrigger`, `AccordionPanel`, and `AccordionContent` from `@angular/aria/accordion`.
+          2. The template correctly nests `ngAccordionTrigger` and `ngAccordionPanel` within an element containing `ngAccordionGroup`.
+          3. Uses `<ng-template ngAccordionContent>` inside the panel to achieve the requested lazy loading behavior.
+          4. Includes CSS styles that specifically target the `[aria-expanded='true']` or `[aria-expanded="true"]` attribute on the trigger to rotate a chevron/icon.
+          5. Did not build a custom accordion using native HTML elements or raw ARIA attributes; it specifically used the `ng*` headless directives.
+        weight: 0.3
+
+  - name: angular-aria-combobox
+    instruction: |
+      Hey, I need a component that acts as a country picker with an autocomplete search. 
+      
+      Here's the deal:
+      - Users should be able to type into a search field to filter a list of countries.
+      - The filtered list should show up in a dropdown popup below the input.
+      - It needs to be fully accessible for screen readers and keyboard users.
+      - Just hardcode a few countries like USA, Canada, Mexico, France, and Germany as dummy data.
+      - Please add some CSS to make the dropdown look like a proper floating menu.
+      
+      Save the file as `country-search.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Package Imports
+          if grep -q "@angular/aria/combobox" country-search.component.ts && grep -q "@angular/aria/listbox" country-search.component.ts; then
+            c1=1; m1="Combobox and Listbox imports found"
+          else
+            c1=0; m1="Missing Combobox or Listbox imports"
+          fi
+          
+          # Check 2: Combobox Structure
+          if grep -q "ngCombobox" country-search.component.ts && grep -q "ngComboboxInput" country-search.component.ts; then
+            c2=1; m2="Combobox container and input found"
+          else
+            c2=0; m2="Missing ngCombobox or ngComboboxInput"
+          fi
+          
+          # Check 3: Floating Popup
+          if grep -q "ngComboboxPopupContainer" country-search.component.ts; then
+            c3=1; m3="ngComboboxPopupContainer found"
+          else
+            c3=0; m3="ngComboboxPopupContainer missing"
+          fi
+          
+          # Check 4: Listbox Directives
+          if grep -q "ngListbox" country-search.component.ts && grep -q "ngOption" country-search.component.ts; then
+            c4=1; m4="ngListbox and ngOption found"
+          else
+            c4=0; m4="Missing ngListbox or ngOption"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"structure\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"popup\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"listbox\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible country picker by utilizing the `@angular/aria` Combobox and Listbox directives.
+          1. Imports `ngCombobox` directives and `ngListbox` directives from their respective `@angular/aria` packages.
+          2. Uses `ngComboboxInput` for the text field to ensure it is editable for the "autocomplete" behavior.
+          3. Correcty wraps the `ngListbox` inside an `<ng-template ngComboboxPopupContainer>` as per the guidelines.
+          4. Includes CSS to style the popup container as a floating menu (e.g., `position: absolute`, `background`, `box-shadow`).
+          5. Did not use native `<datalist>` or a custom implementation; it specifically used the recommended headless directives.
+        weight: 0.3
+
+  - name: angular-aria-menubar
+    instruction: |
+      Hey, can you build a top navigation bar for our app? It needs to be fully accessible for keyboard users.
+      
+      Here's what I'm looking for:
+      - A horizontal main bar with a few root items like 'File' and 'Edit'.
+      - When you interact with 'File', it should drop down a menu with actions like 'New' and 'Open'.
+      - 'Edit' should drop down with 'Copy' and 'Paste'.
+      - Please add some CSS so the main bar lays out horizontally and the dropdown menus actually look like floating menus.
+      
+      Save the component as `app-menubar.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Package Imports
+          if grep -q "@angular/aria/menu" app-menubar.component.ts; then
+            c1=1; m1="Menu imports found"
+          else
+            c1=0; m1="Missing @angular/aria/menu imports"
+          fi
+          
+          # Check 2: Menubar Container
+          if grep -q "ngMenuBar" app-menubar.component.ts; then
+            c2=1; m2="ngMenuBar container found"
+          else
+            c2=0; m2="Missing ngMenuBar"
+          fi
+          
+          # Check 3: Menus and Triggers
+          if grep -q "ngMenu" app-menubar.component.ts && grep -q "ngMenuTrigger" app-menubar.component.ts; then
+            c3=1; m3="ngMenu and ngMenuTrigger found"
+          else
+            c3=0; m3="Missing ngMenu or ngMenuTrigger"
+          fi
+          
+          # Check 4: Menu Items
+          if grep -q "ngMenuItem" app-menubar.component.ts; then
+            c4=1; m4="ngMenuItem found"
+          else
+            c4=0; m4="Missing ngMenuItem"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"menubar\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"triggers\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"items\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible navigation menubar using the `@angular/aria/menu` directives.
+          1. Imports the necessary directives from `@angular/aria/menu`.
+          2. Uses `ngMenuBar` for the top-level horizontal navigation.
+          3. Correcty uses `ngMenuTrigger` on the root items and links them to their respective `ngMenu` dropdowns (typically using template reference variables).
+          4. Uses `ngMenuItem` for individual menu actions.
+          5. Includes CSS to make the main bar horizontal (e.g., `display: flex`) and styles the dropdown menus to appear as floating overlays.
+          6. Did not use native HTML elements or raw ARIA attributes; it specifically used the recommended headless directives.
+        weight: 0.3
+
+  - name: angular-aria-listbox
+    instruction: |
+      I need a custom multi-select list of fruits (Apple, Banana, Orange, Mango, Grape). 
+      
+      Requirements:
+      - It needs to be always visible on the page (not a dropdown popup).
+      - Make sure users can select multiple items and that it's fully accessible.
+      - Add some CSS to highlight the selected items with a blue background.
+      
+      Save it as `fruit-list.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Imports
+          if grep -q "@angular/aria/listbox" fruit-list.component.ts; then
+            c1=1; m1="Listbox imports found"
+          else
+            c1=0; m1="Missing @angular/aria/listbox imports"
+          fi
+          
+          # Check 2: Directives
+          if grep -q "ngListbox" fruit-list.component.ts && grep -q "ngOption" fruit-list.component.ts; then
+            c2=1; m2="ngListbox and ngOption found"
+          else
+            c2=0; m2="Missing ngListbox or ngOption"
+          fi
+          
+          # Check 3: Multi-select
+          if grep -q "multi.*true" fruit-list.component.ts || grep -q "multi]=\"true\"" fruit-list.component.ts || grep -q "multi=\"true\"" fruit-list.component.ts; then
+            c3=1; m3="Multi-select enabled"
+          else
+            c3=0; m3="Multi-select not explicitly enabled"
+          fi
+          
+          # Check 4: Styling
+          if grep -E -q "aria-selected.*true" fruit-list.component.ts; then
+            c4=1; m4="aria-selected styling found"
+          else
+            c4=0; m4="aria-selected styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"multi\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"styling\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible, visible listbox using `@angular/aria/listbox`.
+          1. Imports `Listbox` and `Option` from `@angular/aria/listbox`.
+          2. Uses the `ngListbox` directive on the container and `ngOption` on the items.
+          3. Enables multi-selection (e.g., `[multi]="true"`).
+          4. Includes CSS targeting `[aria-selected="true"]` or `[aria-selected='true']` to apply the blue background.
+          5. Did not build a Combobox (no popup) and did not use a native HTML `<select multiple>`.
+        weight: 0.3
+
+  - name: angular-aria-tabs
+    instruction: |
+      Can you build a tabbed interface for a user dashboard? 
+      
+      Details:
+      - I need three tabs: 'Profile', 'Settings', and 'Billing'.
+      - Make sure it's fully accessible for keyboard navigation.
+      - The content inside the tab panels must be lazily loaded so we don't render hidden tabs on load.
+      - Add some CSS so the active tab looks bold and has a blue bottom border.
+      
+      Save as `dashboard-tabs.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Imports
+          if grep -q "@angular/aria/tabs" dashboard-tabs.component.ts; then
+            c1=1; m1="Tabs imports found"
+          else
+            c1=0; m1="Missing @angular/aria/tabs imports"
+          fi
+          
+          # Check 2: Directives
+          if grep -q "ngTabs" dashboard-tabs.component.ts && grep -q "ngTabList" dashboard-tabs.component.ts && grep -q "ngTabPanel" dashboard-tabs.component.ts; then
+            c2=1; m2="Tabs structural directives found"
+          else
+            c2=0; m2="Missing core ngTab directives"
+          fi
+          
+          # Check 3: Lazy loading content
+          if grep -q "ngTabContent" dashboard-tabs.component.ts; then
+            c3=1; m3="ngTabContent found"
+          else
+            c3=0; m3="ngTabContent missing (lazy loading failed)"
+          fi
+          
+          # Check 4: Styling
+          if grep -E -q "aria-selected.*true" dashboard-tabs.component.ts; then
+            c4=1; m4="aria-selected styling found"
+          else
+            c4=0; m4="aria-selected styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"lazy_content\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"styling\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement accessible tabs using `@angular/aria/tabs`.
+          1. Imports necessary directives from `@angular/aria/tabs`.
+          2. Structure includes `ngTabs` wrapping an `ngTabList` (with `ngTab` buttons) and corresponding `ngTabPanel` elements.
+          3. Uses `<ng-template ngTabContent>` inside the panels to achieve the requested lazy loading behavior.
+          4. Includes CSS targeting `[aria-selected="true"]` or `[aria-selected='true']` to style the active tab.
+          5. Avoided custom tab implementations or third-party tab libraries outside of `@angular/aria`.
+        weight: 0.3
+
+  - name: angular-aria-toolbar
+    instruction: |
+      Build an accessible rich-text formatting toolbar. 
+      
+      Requirements:
+      - Group three toggle buttons together: Bold, Italic, and Underline.
+      - Users should be able to navigate through them with arrow keys.
+      - Make the buttons look 'pressed' (e.g., a darker background) when activated using CSS.
+      
+      Save as `formatting-toolbar.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=4
+          
+          # Check 1: Imports
+          if grep -q "@angular/aria/toolbar" formatting-toolbar.component.ts; then
+            c1=1; m1="Toolbar imports found"
+          else
+            c1=0; m1="Missing @angular/aria/toolbar imports"
+          fi
+          
+          # Check 2: Toolbar Directives
+          if grep -q "ngToolbar" formatting-toolbar.component.ts && grep -q "ngToolbarWidget" formatting-toolbar.component.ts; then
+            c2=1; m2="Toolbar directives found"
+          else
+            c2=0; m2="Missing ngToolbar or ngToolbarWidget"
+          fi
+          
+          # Check 3: Grouping
+          if grep -q "ngToolbarWidgetGroup" formatting-toolbar.component.ts; then
+            c3=1; m3="ngToolbarWidgetGroup found"
+          else
+            c3=0; m3="Missing ngToolbarWidgetGroup"
+          fi
+          
+          # Check 4: Styling
+          if grep -E -q "aria-pressed.*true|aria-checked.*true" formatting-toolbar.component.ts; then
+            c4=1; m4="aria-pressed/checked styling found"
+          else
+            c4=0; m4="Pressed state styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3 + c4))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"grouping\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"},{\"name\":\"styling\",\"passed\":$( [ $c4 -eq 1 ] && echo true || echo false ),\"message\":\"$m4\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible toolbar using `@angular/aria/toolbar`.
+          1. Imports necessary directives from `@angular/aria/toolbar`.
+          2. Structure includes `ngToolbar` wrapping an `ngToolbarWidgetGroup`.
+          3. Uses `ngToolbarWidget` for the formatting buttons.
+          4. Includes CSS targeting `[aria-pressed="true"]` or `[aria-checked="true"]` to style the activated state.
+          5. Avoided building a custom toolbar with raw ARIA attributes; properly utilized the headless directives.
+        weight: 0.3
+
+  - name: angular-aria-tree
+    instruction: |
+      Create an accessible file browser component using a tree structure. 
+      
+      Details:
+      - It should show a folder called 'Documents' that can be expanded to reveal a file called 'Resume.pdf'.
+      - Use CSS to indent the child items to show the hierarchy.
+      - Add some CSS to rotate an arrow icon when the 'Documents' folder is expanded.
+      
+      Save as `file-browser.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=3
+          
+          # Check 1: Imports
+          if grep -q "@angular/aria/tree" file-browser.component.ts; then
+            c1=1; m1="Tree imports found"
+          else
+            c1=0; m1="Missing @angular/aria/tree imports"
+          fi
+          
+          # Check 2: Directives
+          if grep -q "ngTree" file-browser.component.ts && grep -q "ngTreeItem" file-browser.component.ts && grep -q "ngTreeGroup" file-browser.component.ts; then
+            c2=1; m2="Tree directives found"
+          else
+            c2=0; m2="Missing ngTree, ngTreeItem, or ngTreeGroup"
+          fi
+          
+          # Check 3: Styling
+          if grep -E -q "aria-expanded.*true" file-browser.component.ts; then
+            c3=1; m3="aria-expanded styling found"
+          else
+            c3=0; m3="aria-expanded styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"styling\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an accessible tree structure using `@angular/aria/tree`.
+          1. Imports necessary directives from `@angular/aria/tree`.
+          2. Structure includes a root `ngTree`, containing an `ngTreeItem` (Documents), which contains an `ngTreeGroup` (the sub-folder), which contains another `ngTreeItem` (Resume.pdf).
+          3. Includes CSS to indent the nested `ngTreeGroup` (or its items).
+          4. Includes CSS targeting `[aria-expanded="true"]` on the parent item to rotate the indicator icon.
+        weight: 0.3
+
+  - name: angular-aria-grid
+    instruction: |
+      I need a 2D data table showing a list of projects and their status. 
+      
+      Requirements:
+      - The user needs to be able to navigate the cells using arrow keys.
+      - Make it so a user can select a row or cell.
+      - Highlight the selected cell with a background color using CSS.
+      
+      Save as `project-grid.component.ts`.
+    graders:
+      - type: deterministic
+        run: |
+          passed=0
+          total=3
+          
+          # Check 1: Imports (optional but good to check if present)
+          if grep -q "@angular/aria" project-grid.component.ts; then
+            c1=1; m1="Aria imports found"
+          else
+            c1=0; m1="Missing @angular/aria imports"
+          fi
+          
+          # Check 2: Directives
+          if grep -q "ngGrid" project-grid.component.ts && grep -q "ngGridRow" project-grid.component.ts && grep -q "ngGridCell" project-grid.component.ts; then
+            c2=1; m2="Grid directives found"
+          else
+            c2=0; m2="Missing ngGrid, ngGridRow, or ngGridCell"
+          fi
+          
+          # Check 3: Styling
+          if grep -E -q "aria-selected.*true" project-grid.component.ts; then
+            c3=1; m3="aria-selected styling found"
+          else
+            c3=0; m3="aria-selected styling not found"
+          fi
+
+          passed=$((c1 + c2 + c3))
+          score=$(awk "BEGIN {printf \"%.2f\", $passed/$total}")
+          
+          echo "{\"score\":$score,\"details\":\"$passed/$total checks passed\",\"checks\":[{\"name\":\"imports\",\"passed\":$( [ $c1 -eq 1 ] && echo true || echo false ),\"message\":\"$m1\"},{\"name\":\"directives\",\"passed\":$( [ $c2 -eq 1 ] && echo true || echo false ),\"message\":\"$m2\"},{\"name\":\"styling\",\"passed\":$( [ $c3 -eq 1 ] && echo true || echo false ),\"message\":\"$m3\"}]}"
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          The agent should correctly implement an interactive accessible grid using the `@angular/aria` grid directives.
+          1. Uses the `ngGrid` directive on the table container.
+          2. Uses `ngGridRow` for rows and `ngGridCell` for data cells.
+          3. Implements selection logic (e.g., binding to `[(selected)]` or similar as allowed by the directive).
+          4. Includes CSS targeting `[aria-selected="true"]` or `[aria-selected='true']` to highlight the selected cell/row.
+          5. Did not build a static HTML `<table>` without the headless grid directives.
+        weight: 0.3
