@@ -16,6 +16,9 @@ metadata:
 3. Once you finish generating code, run `ng build` to ensure there are no build errors. If there are errors, analyze the error messages and fix them before proceeding. Do not skip this step, as it is critical for ensuring the generated code is correct and functional.
 
 ## Creating New Projects
+If no guidelines are provided by the user, here are same default rules to follow when creating a new Angular project:
+1. Use the latest stable version of Angular unless the user specifies otherwise.
+2. Use Signals Forms for form management in new projects (available in Angular v21 and newer) [Find out more](references/signal-forms.md).
 
 **Execution Rules for `ng new`:**
 When asked to create a new Angular project, you must determine the correct execution command by following these strict steps:
@@ -79,7 +82,7 @@ When implementing dependency injection in Angular, follow these guidelines:
 
 ## Angular Aria
 
-When building accessible custom components, consult the following reference:
+When building accessible custom components for any of the following patterns: Accordion, Listbox, Combobox, Menu, Tabs, Toolbar, Tree, Grid, consult the following reference:
 
 - **Angular Aria Components**: Building headless, accessible components (Accordion, Listbox, Combobox, Menu, Tabs, Toolbar, Tree, Grid) and styling ARIA attributes. Read [angular-aria.md](references/angular-aria.md)
 
